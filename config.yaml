@@ -1,0 +1,45 @@
+# Configuration file for muscle HDR-scRNA pipeline
+qc:
+  min_genes: 300
+  min_cells: 3
+  pct_mt_max: 15
+
+processing:
+  n_top_genes: 2000
+  normalize_target_sum: 10000
+  scale_max_value: 10
+
+clustering:
+  n_neighbors: 15
+  n_pcs: 20
+  leiden_resolution: 0.5
+  method: 'gauss'
+
+integration:
+  method: 'scvi'  # Options: 'scvi', 'harmony', 'combat'
+  n_latent: 30
+  n_layers: 2
+  n_epochs: 400
+  early_stopping: true
+  early_stopping_patience: 20
+  gene_likelihood: 'nb'  # negative binomial for count data
+
+velocity:
+  min_shared_counts: 20
+  n_neighbors: 30
+  n_pcs: 30
+  mode: 'stochastic'  # Options: 'stochastic', 'dynamical'
+
+paths:
+  raw_data: 'data/raw'
+  processed_data: 'data/processed'
+  results: 'results'
+  figures: 'results/figures'
+  
+species:
+  default: 'human'
+  ortholog_table: 'docs/orthologs.tsv'
+  
+reports:
+  template: 'docs/report_template.md'
+  output_format: 'pdf'  # Options: 'pdf', 'html', 'markdown'

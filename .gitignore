@@ -1,0 +1,23 @@
+# Data files
+*.h5ad
+*.csv
+*.csv.gz
+*.tar
+*.gz
+*.zip
+
+# Environment
+venv/
+.venv/
+muscle_env/
+__pycache__/
+*.py[cod]
+
+# Binary files
+*.so
+*.dylib
+
+# Logs
+*.log
+*.err
+*.out

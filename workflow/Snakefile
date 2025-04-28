@@ -1,0 +1,86 @@
+# Enhanced Snakefile with batch correction using Harmony
+import os
+
+# Determine if we're in workflow directory or root
+if os.path.basename(os.getcwd()) == "workflow":
+    workdir: ".."
+
+configfile: "config.yaml"
+
+# Include rule files (relative to this Snakefile)
+include: "rules/download.smk"
+include: "rules/qc_scanpy.smk"
+
+# Define output files
+OUTPUTS = [
+    "data/processed/GSE130646.h5ad",
+    "data/processed/GSE138707.h5ad",
+    "docs/orthologs.tsv",
+    "data/processed/integrated_harmony.h5ad",
+    "results/final_report.pdf"
+]
+
+rule all:
+    input: OUTPUTS
+
+rule get_orthologs:
+    input:
+        hdr_genes="docs/HDR_477_genes.txt"
+    output:
+        orthologs="docs/orthologs.tsv",
+        mapping="docs/orthologs_mapping.json"
+    log:
+        "logs/get_orthologs.log"
+    shell:
+        """
+        mkdir -p logs docs
+        python scripts/get_orthologs.py {input.hdr_genes} {output.orthologs} 2>&1 | tee {log}
+        """
+
+rule integrate_harmony:
+    input:
+        human="data/processed/GSE130646.h5ad",
+        mouse="data/processed/GSE138707.h5ad",
+        orthologs="docs/orthologs.tsv"
+    output:
+        integrated="data/processed/integrated_harmony.h5ad"
+    log:
+        "logs/integrate_harmony.log"
+    threads: 4
+    shell:
+        """
+        mkdir -p logs data/processed
+        python scripts/integrate_harmony.py \
+            {input.human} {input.mouse} {input.orthologs} {output.integrated} \
+            2>&1 | tee {log}
+        """
+
+rule generate_report:
+    input:
+        human_h5ad="data/processed/GSE130646.h5ad",
+        mouse_h5ad="data/processed/GSE138707.h5ad",
+        integrated_h5ad="data/processed/integrated_harmony.h5ad",
+        config="config.yaml"
+    output:
+        report="results/final_report.md",
+        pdf="results/final_report.pdf"
+    log:
+        "logs/generate_report.log"
+    shell:
+        """
+        mkdir -p logs results results/figures
+        python scripts/build_report.py 2>&1 | tee {log}
+        
+        # Only convert to PDF if pandoc is available
+        if command -v pandoc &> /dev/null; then
+            pandoc {output.report} -o {output.pdf}
+        else
+            echo "Pandoc not found. Skipping PDF generation." > {output.pdf}
+        fi
+        """
+
+rule clean:
+    shell:
+        """
+        rm -rf data/processed/* results/* logs/* models/*
+        """
